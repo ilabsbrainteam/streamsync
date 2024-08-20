@@ -17,13 +17,13 @@ class StreamSync:
     def __init__(self, reference_object, pulse_channel):
         self.ref_stream = reference_object.get_chan(pulse_channel)
         self.sfreq = reference_object.info["sfreq"]  # Hz
-        self.streams = []
+        self.streams = [] 
 
     def add_stream(self, stream, channel=None, events=None):
         """Add a new ``Raw`` or video stream, optionally with events.
 
-        stream : Raw | wav
-            An audio or FIF stream.
+        stream : str
+            File path to an audio or FIF stream.
         channel : str | int | None
             Which channel of `stream` contains the sync pulse sequence.
         events : array-like | None
@@ -46,7 +46,6 @@ class StreamSync:
     def plot_sync(self):
         pass
 
-
 def extract_audio_from_video(path_to_video, output_dir):
     """Extracts audio from path provided.
 
@@ -61,6 +60,7 @@ def extract_audio_from_video(path_to_video, output_dir):
         a file with the associated audio labeled the same way.
 
     Raises:
+        ValueException if video path does not exist, 
         Exception if filename is taken in output_dir
     """
     audio_codecout = 'pcm_s16le'
