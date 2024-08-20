@@ -20,6 +20,7 @@ class StreamSync:
     """
 
     def __init__(self, reference_object, pulse_channel):
+        """Initialize StreamSync object with 'Raw' MEG associated with it."""
         # self.ref_stream = reference_object.get_chan(pulse_channel)
         self.ref_stream = None
         # self.sfreq = reference_object.info["sfreq"]  # Hz
@@ -28,6 +29,7 @@ class StreamSync:
 
     def add_stream(self, stream, channel=None, events=None):
         """Add a new ``Raw`` or video stream, optionally with events.
+
         stream : str
             File path to an audio or FIF stream.
         channel : str | int | None
@@ -40,7 +42,7 @@ class StreamSync:
         self.streams.append((stream, srate, pulses, data))
 
     def _extract_data_from_stream(self, stream, channel):
-        """Extracts pulses and raw data from stream provided."""
+        """Extract pulses and raw data from stream provided."""
         ext = pathlib.Path(stream).suffix
         if ext == ".fif":
             return self._extract_data__from_raw(stream, channel)
@@ -53,7 +55,7 @@ class StreamSync:
         pass
 
     def _extract_data_from_wav(self, stream, channel):
-        "Returns tuple of (pulse channel, audio channel) from stereo file."
+        """Return tuple of (pulse channel, audio channel) from stereo file."""
         srate, wav_signal = wavread(stream)
         return (srate, wav_signal[:,channel], wav_signal[:,1-channel])
 
@@ -63,6 +65,7 @@ class StreamSync:
         # TODO spit out a report of correlation/association between all pairs of streams
 
     def plot_sync_pulses(self, tmin=0, tmax=float('inf')):
+        """Plot each stream in the class."""
         # TODO Plot the raw file on the first plot.
         fig, axset = plt.subplots(len(self.streams)+1, 1, figsize = [8,6]) #show individual channels seperately, and the 0th plot is the combination of these. 
         for i, stream in enumerate(self.streams):
@@ -75,7 +78,7 @@ class StreamSync:
         plt.show()
 
 def extract_audio_from_video(path_to_video, output_dir):
-    """Extracts audio from path provided.
+    """Extract audio from path provided.
 
     path_to_video: str
         Path to audio file
