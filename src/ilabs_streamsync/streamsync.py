@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+import os
+import subprocess
+
+
 class StreamSync:
     """Synchronize two data streams.
 
@@ -36,12 +42,50 @@ class StreamSync:
         """Synchronize all streams with the reference stream."""
         # TODO (waves hands) do the hard part.
         # TODO spit out a report of correlation/association between all pairs of streams
-        pass
 
     def plot_sync(self):
         pass
 
 
-def extract_audio_from_video(path_to_video, channel):
-    """Path can be a regex or glob to allow batch processing."""
-    pass
+def extract_audio_from_video(path_to_video, output_dir):
+    """Extracts audio from path provided.
+
+    path_to_video: str
+        Path to audio file
+        TODO allow path_to_video to take regex?
+    output_dir: str
+        Path to directory where extracted audio should be sent
+
+    Effects:
+        Creates output directory if non-existent. For each video found, creates
+        a file with the associated audio labeled the same way.
+
+    Raises:
+        Exception if filename is taken in output_dir
+    """
+    audio_codecout = 'pcm_s16le'
+    audio_suffix = '_16bit'
+    audio_file = os.path.basename(path_to_video) + audio_suffix + '.wav'
+    if not os.path.exists(path_to_video):
+        raise ValueError('Path provided cannot be found.')
+    if os.path.exists(os.path.join(output_dir, audio_file)):
+        raise Exception("Audio already exists for " + path_to_video + " in output directory " + output_dir)
+
+    command = ['ffmpeg',
+        '-acodec', 'pcm_s24le',       # force little-endian format (req'd for Linux)
+        '-i', path_to_video,
+        '-map', '0:a',                # audio only (per DM)
+#         '-af', 'highpass=f=0.1',
+        '-acodec', audio_codecout,
+        '-ac', '2',                   # no longer mono output, so setting to "2"
+        '-y', '-vn',                  # overwrite output file without asking; no video
+        '-loglevel', 'error',
+        audio_file]
+    pipe = subprocess.run(command, timeout=50)
+
+    if pipe.returncode==0:
+        print('Audio extraction was successful for ' + path_to_video)
+        output_path = os.path.join(output_dir, audio_file)
+        os.renames(audio_file, output_path)
+    else:
+        print("Audio extraction unsuccessful for " + path_to_video)
