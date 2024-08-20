@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import subprocess
 
 import matplotlib.pyplot as plt
@@ -40,7 +41,7 @@ class StreamSync:
 
     def _extract_data_from_stream(self, stream, channel):
         """Extracts pulses and raw data from stream provided."""
-        ext = os.path.splitext(stream)[1]
+        ext = pathlib.Path(stream).suffix
         if ext == ".fif":
             return self._extract_data__from_raw(stream, channel)
         if ext == ".wav":
@@ -69,7 +70,7 @@ class StreamSync:
             tt = np.arange(npts) / stream[1]
             idx = np.where((tt>=tmin) & (tt<tmax))
             axset[i+1].plot(tt[idx], stream[2][idx].T)
-            axset[i+1].set_title(os.path.basename(stream[0]))
+            axset[i+1].set_title(pathlib.Path(stream[0]).name)
             # Make label equal to simply the cam number
         plt.show()
 
@@ -92,11 +93,12 @@ def extract_audio_from_video(path_to_video, output_dir):
     """
     audio_codecout = 'pcm_s16le'
     audio_suffix = '_16bit'
-    audio_file = os.path.basename(os.path.splitext(path_to_video)[0]) + audio_suffix + '.wav'
-    if not os.path.exists(path_to_video):
+    p = pathlib.Path(path_to_video)
+    audio_file = p.stem + audio_suffix + '.wav'
+    if not p.exists():
         raise ValueError('Path provided cannot be found.')
-    if os.path.exists(os.path.join(output_dir, audio_file)):
-        raise Exception("Audio already exists for " + path_to_video + " in output directory " + output_dir)
+    if pathlib.PurePath.joinpath(pathlib.Path(output_dir), pathlib.Path(audio_file)).exists():
+        raise Exception(f"Audio already exists for {path_to_video} in output directory.")
 
     command = ['ffmpeg',
         '-acodec', 'pcm_s24le',       # force little-endian format (req'd for Linux)
@@ -111,8 +113,8 @@ def extract_audio_from_video(path_to_video, output_dir):
     pipe = subprocess.run(command, timeout=50, check=False)
 
     if pipe.returncode==0:
-        print('Audio extraction was successful for ' + path_to_video)
-        output_path = os.path.join(output_dir, audio_file)
+        print(f'Audio extraction was successful for {path_to_video}')
+        output_path = pathlib.PurePath.joinpath(pathlib.Path(output_dir), pathlib.Path(audio_file))
         os.renames(audio_file, output_path)
     else:
-        print("Audio extraction unsuccessful for " + path_to_video)
+        print(f"Audio extraction unsuccessful for {path_to_video}")
