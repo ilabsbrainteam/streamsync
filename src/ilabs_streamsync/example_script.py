@@ -4,12 +4,14 @@ from streamsync import StreamSync, extract_audio_from_video
 if __name__ == "__main__":
     # load an MNE raw file
     raw = None
-    cam1 = "/Users/user/VideoSync_NonSubject/sinclair_alexis_audiosync_240110_CAM3.mp4"
+    # cam1 = "/Users/ashtondoane/VideoSync_NonSubject/sinclair_alexis_audiosync_240110_CAM3.mp4"
     flux1 = None
     my_events = []
 
-    extract_audio_from_video(cam1, "/Users/user/VideoSync_NonSubject/output")
-
+    # extract_audio_from_video(cam1, "/Users/ashtondoane/VideoSync_NonSubject/output")
+    ss = StreamSync(None, None)
+    ss.add_stream("/Users/ashtondoane/VideoSync_NonSubject/output/sinclair_alexis_audiosync_240110_CAM3_16bit.wav", channel=1)
+    ss.plot_sync_pulses(tmin=0.998,tmax=1)
 
     # subjects = ["146a", "222b"]
 

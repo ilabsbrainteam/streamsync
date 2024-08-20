@@ -3,6 +3,10 @@ from __future__ import annotations
 import os
 import subprocess
 
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.io.wavfile import read as wavread
+
 
 class StreamSync:
     """Synchronize two data streams.
@@ -15,13 +19,14 @@ class StreamSync:
     """
 
     def __init__(self, reference_object, pulse_channel):
-        self.ref_stream = reference_object.get_chan(pulse_channel)
-        self.sfreq = reference_object.info["sfreq"]  # Hz
-        self.streams = [] 
+        # self.ref_stream = reference_object.get_chan(pulse_channel)
+        self.ref_stream = None
+        # self.sfreq = reference_object.info["sfreq"]  # Hz
+        self.sfreq = 0
+        self.streams = [] #  of (filename, srate, Pulses, Data)
 
     def add_stream(self, stream, channel=None, events=None):
         """Add a new ``Raw`` or video stream, optionally with events.
-
         stream : str
             File path to an audio or FIF stream.
         channel : str | int | None
@@ -30,21 +35,43 @@ class StreamSync:
             Events associated with the stream. TODO: should they be integer sample
             numbers? Timestamps? Do we support both?
         """
-        pulses = self._extract_pulse_sequence_from_stream(stream, channel=channel)
-        self.streams.append(pulses)
+        srate, pulses, data = self._extract_data_from_stream(stream, channel=channel)
+        self.streams.append((stream, srate, pulses, data))
 
-    def _extract_pulse_sequence_from_stream(self, stream, channel):
-        # TODO triage based on input type (e.g., if it's a Raw, pull out a stim chan,
-        # if it's audio, just add it as-is)
+    def _extract_data_from_stream(self, stream, channel):
+        """Extracts pulses and raw data from stream provided."""
+        ext = os.path.splitext(stream)[1]
+        if ext == ".fif":
+            return self._extract_data__from_raw(stream, channel)
+        if ext == ".wav":
+            return self._extract_data_from_wav(stream, channel)
+        raise TypeError("Stream provided was of unsupported format. Please provide a fif or wav file.")
+            
+
+    def _extract_data__from_raw(self, stream, channel):
         pass
+
+    def _extract_data_from_wav(self, stream, channel):
+        "Returns tuple of (pulse channel, audio channel) from stereo file."
+        srate, wav_signal = wavread(stream)
+        return (srate, wav_signal[:,channel], wav_signal[:,1-channel])
 
     def do_syncing(self):
         """Synchronize all streams with the reference stream."""
         # TODO (waves hands) do the hard part.
         # TODO spit out a report of correlation/association between all pairs of streams
 
-    def plot_sync(self):
-        pass
+    def plot_sync_pulses(self, tmin=0, tmax=float('inf')):
+        # TODO Plot the raw file on the first plot.
+        fig, axset = plt.subplots(len(self.streams)+1, 1, figsize = [8,6]) #show individual channels seperately, and the 0th plot is the combination of these. 
+        for i, stream in enumerate(self.streams):
+            npts = len(stream[2])
+            tt = np.arange(npts) / stream[1]
+            idx = np.where((tt>=tmin) & (tt<tmax))
+            axset[i+1].plot(tt[idx], stream[2][idx].T)
+            axset[i+1].set_title(os.path.basename(stream[0]))
+            # Make label equal to simply the cam number
+        plt.show()
 
 def extract_audio_from_video(path_to_video, output_dir):
     """Extracts audio from path provided.
@@ -65,7 +92,7 @@ def extract_audio_from_video(path_to_video, output_dir):
     """
     audio_codecout = 'pcm_s16le'
     audio_suffix = '_16bit'
-    audio_file = os.path.basename(path_to_video) + audio_suffix + '.wav'
+    audio_file = os.path.basename(os.path.splitext(path_to_video)[0]) + audio_suffix + '.wav'
     if not os.path.exists(path_to_video):
         raise ValueError('Path provided cannot be found.')
     if os.path.exists(os.path.join(output_dir, audio_file)):
@@ -81,7 +108,7 @@ def extract_audio_from_video(path_to_video, output_dir):
         '-y', '-vn',                  # overwrite output file without asking; no video
         '-loglevel', 'error',
         audio_file]
-    pipe = subprocess.run(command, timeout=50)
+    pipe = subprocess.run(command, timeout=50, check=False)
 
     if pipe.returncode==0:
         print('Audio extraction was successful for ' + path_to_video)
