@@ -45,7 +45,7 @@ class StreamSync:
         """Extract pulses and raw data from stream provided."""
         ext = pathlib.Path(stream).suffix
         if ext == ".fif":
-            return self._extract_data__from_raw(stream, channel)
+            return self._extract_data_from_raw(stream, channel)
         if ext == ".wav":
             return self._extract_data_from_wav(stream, channel)
         raise TypeError("Stream provided was of unsupported format. Please provide a fif or wav file.")
