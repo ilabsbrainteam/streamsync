@@ -1,17 +1,23 @@
+from __future__ import annotations
+
 import mne
 from streamsync import StreamSync, extract_audio_from_video
 
 if __name__ == "__main__":
     # load an MNE raw file
-    raw = None
-    cam1 = "/Users/user/VideoSync_NonSubject/sinclair_alexis_audiosync_240110_CAM3.mp4"
+    raw = "/Users/user/VideoSync_NonSubject/sinclair_alexis_audiosync_240110_raw.fif"
+    channel = "STI011"
+    cams = ["/Users/user/VideoSync_NonSubject/sinclair_alexis_audiosync_240110_CAM3.mp4"]
+    output_dir = "/Users/user/VideoSync_NonSubject/output"
     flux1 = None
     my_events = []
 
-    extract_audio_from_video(cam1, "/Users/user/VideoSync_NonSubject/output")
-    ss = StreamSync(None, None) #Raw type not supported yet
-    ss.add_stream("/Users/user/VideoSync_NonSubject/output/sinclair_alexis_audiosync_240110_CAM3_16bit.wav", channel=1)
-    ss.plot_sync_pulses(tmin=0.998,tmax=1)
+    for cam in cams:
+        extract_audio_from_video(cam, output_dir)
+    ss = StreamSync(raw, channel)
+
+    # ss.add_stream("/Users/ashtondoane/VideoSync_NonSubject/output/sinclair_alexis_audiosync_240110_CAM3_16bit.wav", channel=1)
+    # ss.plot_sync_pulses(tmin=0.998,tmax=1)
 
     # subjects = ["146a", "222b"]
 

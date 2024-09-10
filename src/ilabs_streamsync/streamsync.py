@@ -1,13 +1,17 @@
+
 from __future__ import annotations
 
 import os
 import pathlib
 import subprocess
 
+import logger
 import matplotlib.pyplot as plt
+import mne
 import numpy as np
 from scipy.io.wavfile import read as wavread
 
+FFMPEG_TIMEOUT_SEC = 50
 
 class StreamSync:
     """Synchronize two data streams.
@@ -20,12 +24,41 @@ class StreamSync:
     """
 
     def __init__(self, reference_object, pulse_channel):
-        """Initialize StreamSync object with 'Raw' MEG associated with it."""
-        # self.ref_stream = reference_object.get_chan(pulse_channel)
-        self.ref_stream = None
-        # self.sfreq = reference_object.info["sfreq"]  # Hz
-        self.sfreq = 0
-        self.streams = [] #  of (filename, srate, Pulses, Data)
+        """Initialize StreamSync object with 'Raw' MEG associated with it.
+        
+        reference_object: str TODO: is str the best method for this, or should this be pathlib obj?
+            File path to an MEG raw file with fif formatting. TODO: Verify fif only?
+        pulse_channel: str
+            A string associated with the stim channel name.
+        """
+        # Check provided reference_object for type and existence.
+        if not reference_object:
+            raise TypeError("reference_object is None. Please provide reference_object of type str.")
+        if type(reference_object) is not str:
+            raise TypeError("reference_object must be a file path of type str.")
+        ref_path_obj = pathlib.Path(reference_object)
+        if not ref_path_obj.exists():
+            raise OSError("reference_object file path does not exist.")
+        if not ref_path_obj.suffix == ".fif":
+            raise ValueError("Provided reference object is not of type .fif")
+
+        # Load in raw file if valid
+        raw = mne.io.read_raw_fif(reference_object, preload=False, allow_maxshield=True)
+
+        #Check type and value of pulse_channel, and ensure reference object has such a channel.
+        if not pulse_channel:
+            raise TypeError("pulse_channel is None. Please provide pulse_chanel parameter of type int.")
+        if type(pulse_channel) is not str:
+            raise TypeError("pulse_chanel parameter must be of type str.")
+        if raw[pulse_channel] is None:
+            raise ValueError('pulse_channel does not exist in refrence_object.')
+        
+
+        self.raw = mne.io.read_raw_fif(reference_object, preload=False, allow_maxshield=True)
+        self.ref_stream = raw[pulse_channel]
+        self.sfreq = self.raw.info["sfreq"]  # Hz
+
+        self.streams = [] # of (filename, srate, Pulses, Data)
 
     def add_stream(self, stream, channel=None, events=None):
         """Add a new ``Raw`` or video stream, optionally with events.
@@ -44,15 +77,10 @@ class StreamSync:
     def _extract_data_from_stream(self, stream, channel):
         """Extract pulses and raw data from stream provided."""
         ext = pathlib.Path(stream).suffix
-        if ext == ".fif":
-            return self._extract_data__from_raw(stream, channel)
         if ext == ".wav":
             return self._extract_data_from_wav(stream, channel)
-        raise TypeError("Stream provided was of unsupported format. Please provide a fif or wav file.")
-            
+        raise TypeError("Stream provided was of unsupported format. Please provide a wav file.")
 
-    def _extract_data__from_raw(self, stream, channel):
-        pass
 
     def _extract_data_from_wav(self, stream, channel):
         """Return tuple of (pulse channel, audio channel) from stereo file."""
@@ -102,6 +130,11 @@ def extract_audio_from_video(path_to_video, output_dir):
         raise ValueError('Path provided cannot be found.')
     if pathlib.PurePath.joinpath(pathlib.Path(output_dir), pathlib.Path(audio_file)).exists():
         raise Exception(f"Audio already exists for {path_to_video} in output directory.")
+    
+    # Create output directory is non-existent.
+    od = pathlib.Path(output_dir)
+    od.mkdir(exist_ok=True, parents=True)
+    output_path = output_dir + "/" + audio_file
 
     command = ['ffmpeg',
         '-acodec', 'pcm_s24le',       # force little-endian format (req'd for Linux)
@@ -112,12 +145,10 @@ def extract_audio_from_video(path_to_video, output_dir):
         '-ac', '2',                   # no longer mono output, so setting to "2"
         '-y', '-vn',                  # overwrite output file without asking; no video
         '-loglevel', 'error',
-        audio_file]
-    pipe = subprocess.run(command, timeout=50, check=False)
+        output_path]
+    pipe = subprocess.run(command, timeout=FFMPEG_TIMEOUT_SEC, check=False)
 
     if pipe.returncode==0:
         print(f'Audio extraction was successful for {path_to_video}')
-        output_path = pathlib.PurePath.joinpath(pathlib.Path(output_dir), pathlib.Path(audio_file))
-        os.renames(audio_file, output_path)
     else:
         print(f"Audio extraction unsuccessful for {path_to_video}")
