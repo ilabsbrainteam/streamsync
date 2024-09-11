@@ -1,11 +1,11 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import pathlib
 import subprocess
 
-import logger
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
@@ -33,21 +33,21 @@ class StreamSync:
         """
         # Check provided reference_object for type and existence.
         if not reference_object:
-            raise TypeError("reference_object is None. Please provide reference_object of type str.")
+            raise TypeError("reference_object is None. Please provide a path.")
         if type(reference_object) is not str:
             raise TypeError("reference_object must be a file path of type str.")
         ref_path_obj = pathlib.Path(reference_object)
         if not ref_path_obj.exists():
             raise OSError("reference_object file path does not exist.")
         if not ref_path_obj.suffix == ".fif":
-            raise ValueError("Provided reference object is not of type .fif")
+            raise ValueError("Provided reference object does not point to a .fif file.")
 
         # Load in raw file if valid
         raw = mne.io.read_raw_fif(reference_object, preload=False, allow_maxshield=True)
 
         #Check type and value of pulse_channel, and ensure reference object has such a channel.
         if not pulse_channel:
-            raise TypeError("pulse_channel is None. Please provide pulse_chanel parameter of type int.")
+            raise TypeError("pulse_channel is None. Please provide a channel name of type str.")
         if type(pulse_channel) is not str:
             raise TypeError("pulse_chanel parameter must be of type str.")
         if raw[pulse_channel] is None:
@@ -56,6 +56,7 @@ class StreamSync:
 
         self.raw = mne.io.read_raw_fif(reference_object, preload=False, allow_maxshield=True)
         self.ref_stream = raw[pulse_channel]
+
         self.sfreq = self.raw.info["sfreq"]  # Hz
 
         self.streams = [] # of (filename, srate, Pulses, Data)
@@ -75,7 +76,7 @@ class StreamSync:
         self.streams.append((stream, srate, pulses, data))
 
     def _extract_data_from_stream(self, stream, channel):
-        """Extract pulses and raw data from stream provided."""
+        """Extract pulses and raw data from stream provided. TODO: Implement adding a annotation stream."""
         ext = pathlib.Path(stream).suffix
         if ext == ".wav":
             return self._extract_data_from_wav(stream, channel)
@@ -87,15 +88,30 @@ class StreamSync:
         srate, wav_signal = wavread(stream)
         return (srate, wav_signal[:,channel], wav_signal[:,1-channel])
 
+    def remove_stream(self, stream):
+        pass
+
     def do_syncing(self):
         """Synchronize all streams with the reference stream."""
         # TODO (waves hands) do the hard part.
         # TODO spit out a report of correlation/association between all pairs of streams
 
     def plot_sync_pulses(self, tmin=0, tmax=float('inf')):
-        """Plot each stream in the class."""
-        # TODO Plot the raw file on the first plot.
+        """Plot each stream in the class.
+        
+        tmin: int
+            Minimum timestamp to be graphed.
+        tmax: int
+            Maximum timestamp to be graphed.    
+        """
         fig, axset = plt.subplots(len(self.streams)+1, 1, figsize = [8,6]) #show individual channels seperately, and the 0th plot is the combination of these. 
+        # Plot reference_object
+        trig, tt_trig = self.ref_stream
+        trig = trig.reshape(tt_trig.shape)
+        idx = np.where((tt_trig>=tmin) & (tt_trig<tmax))
+        axset[0].plot(tt_trig[idx], trig[idx]*100, c='r')
+        axset[0].set_title("Reference MEG")
+        # Plot all other streams
         for i, stream in enumerate(self.streams):
             npts = len(stream[2])
             tt = np.arange(npts) / stream[1]
@@ -148,7 +164,8 @@ def extract_audio_from_video(path_to_video, output_dir):
         output_path]
     pipe = subprocess.run(command, timeout=FFMPEG_TIMEOUT_SEC, check=False)
 
+    logger = logging.getLogger(__name__)
     if pipe.returncode==0:
-        print(f'Audio extraction was successful for {path_to_video}')
+        logger.info(f'Audio extraction was successful for {path_to_video}')
     else:
-        print(f"Audio extraction unsuccessful for {path_to_video}")
+        logger.info(f"Audio extraction unsuccessful for {path_to_video}")

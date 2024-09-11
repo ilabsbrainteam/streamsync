@@ -16,8 +16,9 @@ if __name__ == "__main__":
         extract_audio_from_video(cam, output_dir)
     ss = StreamSync(raw, channel)
 
-    # ss.add_stream("/Users/ashtondoane/VideoSync_NonSubject/output/sinclair_alexis_audiosync_240110_CAM3_16bit.wav", channel=1)
-    # ss.plot_sync_pulses(tmin=0.998,tmax=1)
+    # TODO: Perhaps the extraction above could return the newly created paths so that this doesn't need to be hard coded.
+    ss.add_stream("/Users/user/VideoSync_NonSubject/output/sinclair_alexis_audiosync_240110_CAM3_16bit.wav", channel=1)
+    ss.plot_sync_pulses(tmin=0.5,tmax=50)
 
     # subjects = ["146a", "222b"]
 
