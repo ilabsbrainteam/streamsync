@@ -13,10 +13,9 @@ if __name__ == "__main__":
     my_events = []
 
     for cam in cams:
-        extract_audio_from_video(cam, output_dir)
+        extract_audio_from_video(cam, output_dir, overwrite=False) #This could potentially return filenames to avoid the hardcoding seen below.
     ss = StreamSync(raw, channel)
 
-    # TODO: Perhaps the extraction above could return the newly created paths so that this doesn't need to be hard coded.
     ss.add_stream("/Users/user/VideoSync_NonSubject/output/sinclair_alexis_audiosync_240110_CAM3_16bit.wav", channel=1)
     ss.plot_sync_pulses(tmin=0.5,tmax=50)
 

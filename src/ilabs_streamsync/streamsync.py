@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import mne
 import numpy as np
 from scipy.io.wavfile import read as wavread
+from streamdata import StreamData
 
 FFMPEG_TIMEOUT_SEC = 50
 
@@ -59,7 +60,7 @@ class StreamSync:
 
         self.sfreq = self.raw.info["sfreq"]  # Hz
 
-        self.streams = [] # of (filename, srate, Pulses, Data)
+        self.streams = [] # list of StreamData objects
 
     def add_stream(self, stream, channel=None, events=None):
         """Add a new ``Raw`` or video stream, optionally with events.
@@ -72,8 +73,7 @@ class StreamSync:
             Events associated with the stream. TODO: should they be integer sample
             numbers? Timestamps? Do we support both?
         """
-        srate, pulses, data = self._extract_data_from_stream(stream, channel=channel)
-        self.streams.append((stream, srate, pulses, data))
+        self.streams.append(self._extract_data_from_stream(stream, channel=channel))
 
     def _extract_data_from_stream(self, stream, channel):
         """Extract pulses and raw data from stream provided. TODO: Implement adding a annotation stream."""
@@ -86,7 +86,7 @@ class StreamSync:
     def _extract_data_from_wav(self, stream, channel):
         """Return tuple of (pulse channel, audio channel) from stereo file."""
         srate, wav_signal = wavread(stream)
-        return (srate, wav_signal[:,channel], wav_signal[:,1-channel])
+        return StreamData(filename = stream, sample_rate=srate, pulses=wav_signal[:,channel], data=wav_signal[:,1-channel])
 
     def remove_stream(self, stream):
         pass
@@ -96,7 +96,7 @@ class StreamSync:
         # TODO (waves hands) do the hard part.
         # TODO spit out a report of correlation/association between all pairs of streams
 
-    def plot_sync_pulses(self, tmin=0, tmax=float('inf')):
+    def plot_sync_pulses(self, tmin=0, tmax=None):
         """Plot each stream in the class.
         
         tmin: int
@@ -113,15 +113,15 @@ class StreamSync:
         axset[0].set_title("Reference MEG")
         # Plot all other streams
         for i, stream in enumerate(self.streams):
-            npts = len(stream[2])
-            tt = np.arange(npts) / stream[1]
+            npts = len(stream.pulses)
+            tt = np.arange(npts) / stream.sample_rate
             idx = np.where((tt>=tmin) & (tt<tmax))
-            axset[i+1].plot(tt[idx], stream[2][idx].T)
-            axset[i+1].set_title(pathlib.Path(stream[0]).name)
+            axset[i+1].plot(tt[idx], stream.pulses[idx].T)
+            axset[i+1].set_title(pathlib.Path(stream.filename).name)
             # Make label equal to simply the cam number
         plt.show()
 
-def extract_audio_from_video(path_to_video, output_dir):
+def extract_audio_from_video(path_to_video, output_dir, overwrite=False):
     """Extract audio from path provided.
 
     path_to_video: str
@@ -138,13 +138,11 @@ def extract_audio_from_video(path_to_video, output_dir):
         ValueException if video path does not exist, 
         Exception if filename is taken in output_dir
     """
-    audio_codecout = 'pcm_s16le'
-    audio_suffix = '_16bit'
     p = pathlib.Path(path_to_video)
-    audio_file = p.stem + audio_suffix + '.wav'
+    audio_file = p.with_stem(f"{p.stem}_16_bit").with_suffix(".wav").name
     if not p.exists():
         raise ValueError('Path provided cannot be found.')
-    if pathlib.PurePath.joinpath(pathlib.Path(output_dir), pathlib.Path(audio_file)).exists():
+    if not overwrite and pathlib.PurePath.joinpath(pathlib.Path(output_dir), pathlib.Path(audio_file)).exists():
         raise Exception(f"Audio already exists for {path_to_video} in output directory.")
     
     # Create output directory is non-existent.
@@ -157,7 +155,7 @@ def extract_audio_from_video(path_to_video, output_dir):
         '-i', path_to_video,
         '-map', '0:a',                # audio only (per DM)
 #         '-af', 'highpass=f=0.1',
-        '-acodec', audio_codecout,
+        '-acodec', 'pcm_s16le',
         '-ac', '2',                   # no longer mono output, so setting to "2"
         '-y', '-vn',                  # overwrite output file without asking; no video
         '-loglevel', 'error',
