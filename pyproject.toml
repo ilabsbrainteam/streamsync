@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 
 [project]
-name = "ilabs_streamsync"
+name = "streamsync"
 authors = [
   { name = "Daniel McCloy", email = "dan@mccloy.info" },
 ]
@@ -21,11 +21,8 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering",
   "Typing :: Typed",
 ]
@@ -50,15 +47,15 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ilabsbrainteam/ilabs_streamsync"
-"Bug Tracker" = "https://github.com/ilabsbrainteam/ilabs_streamsync/issues"
-Discussions = "https://github.com/ilabsbrainteam/ilabs_streamsync/discussions"
-Changelog = "https://github.com/ilabsbrainteam/ilabs_streamsync/releases"
+Homepage = "https://github.com/ilabsbrainteam/streamsync"
+"Bug Tracker" = "https://github.com/ilabsbrainteam/streamsync/issues"
+Discussions = "https://github.com/ilabsbrainteam/streamsync/discussions"
+Changelog = "https://github.com/ilabsbrainteam/streamsync/releases"
 
 
 [tool.hatch]
 version.source = "vcs"
-build.hooks.vcs.version-file = "src/ilabs_streamsync/_version.py"
+build.hooks.vcs.version-file = "src/streamsync/_version.py"
 
 [tool.hatch.envs.default]
 features = ["test"]
@@ -79,7 +76,7 @@ testpaths = [
 
 
 [tool.coverage]
-run.source = ["ilabs_streamsync"]
+run.source = ["streamsync"]
 report.exclude_also = [
   '\.\.\.',
   'if typing.TYPE_CHECKING:',
@@ -87,7 +84,7 @@ report.exclude_also = [
 
 [tool.mypy]
 files = ["src", "tests"]
-python_version = "3.8"
+python_version = "3.12"
 warn_unused_configs = true
 strict = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
@@ -96,7 +93,7 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = "ilabs_streamsync.*"
+module = "streamsync.*"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
@@ -135,7 +132,7 @@ ignore = [
 ]
 isort.required-imports = ["from __future__ import annotations"]
 # Uncomment if using a _compat.typing backport
-# typing-modules = ["ilabs_streamsync._compat.typing"]
+# typing-modules = ["streamsync._compat.typing"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
@@ -143,7 +140,7 @@ isort.required-imports = ["from __future__ import annotations"]
 
 
 [tool.pylint]
-py-version = "3.8"
+py-version = "3.12"
 ignore-paths = [".*/_version.py"]
 reports.output-format = "colorized"
 similarities.ignore-imports = "yes"
