@@ -13,7 +13,7 @@ class StreamSync:
         self.sfreq = reference_object.info["sfreq"]  # Hz
         self.streams = []
 
-    def add_stream(self, stream, channel=None, events=None):
+    def add_stream(self, stream, channel=None, events=None):  # noqa ARG002
         """Add a new ``Raw`` or video stream, optionally with events.
 
         stream : Raw | wav
@@ -42,6 +42,6 @@ class StreamSync:
         pass
 
 
-def extract_audio_from_video(path_to_video, channel):
+def extract_audio_from_video(path_to_video, channel):  # noqa ARG001
     """Path can be a regex or glob to allow batch processing."""
     pass

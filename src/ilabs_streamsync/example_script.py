@@ -1,6 +1,6 @@
-import mne
+import mne  # noqa F401
 
-from ilabs_streamsync import StreamSync, extract_audio_from_video
+from streamsync import StreamSync, extract_audio_from_video
 
 # load an MNE raw file
 raw = None
@@ -27,7 +27,7 @@ for subj in subjects:
     raw.set_annotations(annot)
     fig.savefig(...)
     if result < 0.7:
-        write_log_msg(f"subj {subj} had bad pulse syncing, aborting")
+        write_log_msg(f"subj {subj} had bad pulse syncing, aborting")  # noqa F821
         continue
 
     # apply maxfilter
