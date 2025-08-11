@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import importlib.metadata
 
-import ilabs_streamsync as m
+import streamsync as m
 
 
 def test_version():
